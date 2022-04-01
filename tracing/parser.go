@@ -3,8 +3,11 @@ package tracing
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
+
+	"golang.org/x/exp/maps"
 )
 
 func Parse(payload string) (Trace, error) {
@@ -21,7 +24,7 @@ func Parse(payload string) (Trace, error) {
 			return Trace{}, err
 		}
 
-		return ParseJson(payload, result)
+		return parseJson(payload, result)
 	}
 
 	return Trace{
@@ -32,10 +35,13 @@ func Parse(payload string) (Trace, error) {
 
 }
 
-func ParseJson(payload string, jsonMap map[string]interface{}) (Trace, error) {
+func parseJson(payload string, jsonMap map[string]interface{}) (Trace, error) {
+	keys := maps.Keys(jsonMap)
+	fmt.Println(keys)
 	return Trace{}, nil
 }
 
-func ParseClef(payload string, jsonMap map[string]interface{}) (Trace, error) {
+func parseClef(payload string, jsonMap map[string]interface{}) (Trace, error) {
+
 	return Trace{}, nil
 }

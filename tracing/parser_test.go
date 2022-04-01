@@ -1,8 +1,6 @@
 package tracing
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 	"time"
 
@@ -10,15 +8,8 @@ import (
 )
 
 func Test_canLoadJson(t *testing.T) {
-	var trace interface{}
 	jsonString := `{"Timestamp":"2016-01-01T00:00:00Z","Message":"hello","CorrelationId":"12345","Metrics":{"foo":1,"bar":2},"Level":"info"}`
-	err := json.Unmarshal([]byte(jsonString), &trace)
-	if err != nil {
-		t.Errorf("Error: %s", err)
-	}
-
-	fmt.Println(trace)
-
+	Parse(jsonString)
 }
 
 func TestParser_string(t *testing.T) {
