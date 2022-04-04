@@ -149,3 +149,42 @@ func Test_isDate(t *testing.T) {
 func getSecondParam(one interface{}, two interface{}) interface{} {
 	return two
 }
+
+func Test_getting_time_from_epoch(t *testing.T) {
+	epoch := int64(1649107564)
+	utc := "2022-04-04T21:26:04Z"
+
+	t1, _ := getDateFromEpoch(epoch)
+	t2, _ := time.Parse(time.RFC3339, utc)
+	assert.True(t, t1.Equal(t2))
+
+}
+
+func Test_getting_time_from_epoch_milli(t *testing.T) {
+	epoch := int64(1649107564000)
+	utc := "2022-04-04T21:26:04Z"
+
+	t1, _ := getDateFromEpoch(epoch)
+	t2, _ := time.Parse(time.RFC3339, utc)
+	assert.True(t, t1.Equal(t2))
+}
+
+func Test_getting_time_from_epoch_micro(t *testing.T) {
+	epoch := int64(1649107564000000)
+	utc := "2022-04-04T21:26:04Z"
+
+	t1, _ := getDateFromEpoch(epoch)
+	t2, _ := time.Parse(time.RFC3339, utc)
+	assert.True(t, t1.Equal(t2))
+
+}
+
+func Test_getting_time_from_epoch_nano(t *testing.T) {
+	epoch := int64(1649107564000000000)
+	utc := "2022-04-04T21:26:04Z"
+
+	t1, _ := getDateFromEpoch(epoch)
+	t2, _ := time.Parse(time.RFC3339, utc)
+	assert.True(t, t1.Equal(t2))
+
+}
