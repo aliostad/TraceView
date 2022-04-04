@@ -2,11 +2,19 @@
 
 A light-weight and cross-platform trace capturing and viewing tool _for developers_. Receives traces by UDP, and and they are then viewable/searchable using a web interface. Inspired by Sysinternal's [DebugView](https://docs.microsoft.com/en-us/sysinternals/downloads/debugview).
 
+## CURRENTLY WORK IN PROGRESS
+
+There are no release at the moment but FAQ below should give you an idea what this project is about.
+
 ## FAQ's
 
 ### There are so many tracing/logging tools out there. Why adding this?
 
 Because they are targeted for production environments and as a result have many knobs and are pretty difficult to set up and configure. TraceView does not target such scenarios and is intended for running mostly on developer's machines while debugging - hence trivial to get started with.
+
+### If this is intended for development environment scenarios only, why persisted storage?
+
+The idea is that once you capture a trace, you might want to review it later. With an in-memory storage, as soon as you stop the docker container all traces will be lost.
 
 ### What are typical scenarios where I might need it?
 
