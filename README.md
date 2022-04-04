@@ -4,9 +4,9 @@ A light-weight and cross-platform trace capturing and viewing tool _for develope
 
 ## CURRENTLY WORK IN PROGRESS
 
-There are no release at the moment but FAQ below should give you an idea what this project is about.
+There are no releases at the moment but the FAQ below should give you an idea what this project is about.
 
-## FAQ's
+## FAQ
 
 ### There are so many tracing/logging tools out there. Why adding this?
 
