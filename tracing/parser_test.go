@@ -41,8 +41,8 @@ func TestParser_clef_full(t *testing.T) {
 	assert.Equal(t, "hello", trc.Message)
 	assert.Equal(t, 11, trc.Timestamp.Hour())
 	assert.Equal(t, "debug", trc.Level)
-	assert.Equal(t, "12345", trc.CorrelationId)
-	assert.Equal(t, 2, len(trc.Properties))
+	assert.Equal(t, "", trc.CorrelationId)
+	assert.Equal(t, 3, len(trc.Properties))
 	assert.Equal(t, 1, len(trc.Metrics))
 	assert.Equal(t, "sumagh", trc.Properties["foo"])
 	assert.Equal(t, 2.0, trc.Metrics["bar"]) // golang reads json number as float64
@@ -51,15 +51,91 @@ func TestParser_clef_full(t *testing.T) {
 func TestParser_clef_doesnt_fail_no_message(t *testing.T) {
 	json := `{"@t":"2016-11-21T11:22:33Z","CorrelationId":"12345","@l":"infos","foo":"sumagh","bar":2}`
 	parser := PayloadParser{}
+	_, err := parser.Parse(json)
+	assert.Nil(t, err)
+}
+
+func TestParser_nonclef_no_config(t *testing.T) {
+	json := `{"Timestamp":"2016-11-21T11:22:33Z","message": "I was here!","CorrelationId":"12345","severity":"infos","foo":"sumagh","bar":2}`
+	parser := PayloadParser{}
+	trc, err := parser.Parse(json)
+	assert.Nil(t, err)
+	assert.Equal(t, 11, trc.Timestamp.Hour())
+	assert.Equal(t, "infos", trc.Level)
+	assert.Equal(t, "", trc.CorrelationId)
+	assert.Equal(t, "I was here!", trc.Message)
+	assert.Equal(t, 2, len(trc.Properties))
+	assert.Equal(t, 1, len(trc.Metrics))
+	assert.Equal(t, "sumagh", trc.Properties["foo"])
+	assert.Equal(t, 2.0, trc.Metrics["bar"]) // golang reads json number as float64
+}
+
+func TestParser_nonclef_full_config(t *testing.T) {
+	json := `{"Timestampi":"2016-11-21T11:22:33Z","mensaje": "I was here!","corrrId":"12345","suvirity":"infos","foo":"sumagh","bar":2}`
+	parser := PayloadParser{
+		config: Config{
+			TimestampFieldNames:     []string{"Timestampi"},
+			MessageFieldNames:       []string{"mensaje"},
+			LevelFieldNames:         []string{"suvirity"},
+			CorrelationIdFieldNames: []string{"corrrId"},
+		},
+	}
 	trc, err := parser.Parse(json)
 	assert.Nil(t, err)
 	assert.Equal(t, 11, trc.Timestamp.Hour())
 	assert.Equal(t, "infos", trc.Level)
 	assert.Equal(t, "12345", trc.CorrelationId)
+	assert.Equal(t, "I was here!", trc.Message)
 	assert.Equal(t, 1, len(trc.Properties))
 	assert.Equal(t, 1, len(trc.Metrics))
 	assert.Equal(t, "sumagh", trc.Properties["foo"])
 	assert.Equal(t, 2.0, trc.Metrics["bar"]) // golang reads json number as float64
+}
+
+func TestParser_nonclef_full_config_message_not_found(t *testing.T) {
+	json := `{"Timestampi":"2016-11-21T11:22:33Z","message": "I was here!","corrrId":"12345","suvirity":"infos","foo":"sumagh","bar":2}`
+	parser := PayloadParser{
+		config: Config{
+			TimestampFieldNames:     []string{"Timestampi"},
+			MessageFieldNames:       []string{"mensaje"},
+			LevelFieldNames:         []string{"suvirity"},
+			CorrelationIdFieldNames: []string{"corrrId"},
+		},
+	}
+
+	_, err := parser.Parse(json)
+	assert.NotNil(t, err)
+
+}
+
+func TestParser_nonclef_full_config_level_not_found(t *testing.T) {
+	json := `{"Timestampi":"2016-11-21T11:22:33Z","message": "I was here!","corrrId":"12345","severity":"infos","foo":"sumagh","bar":2}`
+	parser := PayloadParser{
+		config: Config{
+			TimestampFieldNames:     []string{"Timestampi"},
+			MessageFieldNames:       []string{},
+			LevelFieldNames:         []string{"suvirity"},
+			CorrelationIdFieldNames: []string{"corrrId"},
+		},
+	}
+
+	trc, err := parser.Parse(json)
+	assert.Nil(t, err)
+	assert.Equal(t, 11, trc.Timestamp.Hour())
+	assert.Equal(t, "info", trc.Level)
+	assert.Equal(t, "12345", trc.CorrelationId)
+	assert.Equal(t, "I was here!", trc.Message)
+	assert.Equal(t, 2, len(trc.Properties))
+	assert.Equal(t, 1, len(trc.Metrics))
+	assert.Equal(t, "sumagh", trc.Properties["foo"])
+	assert.Equal(t, 2.0, trc.Metrics["bar"]) // golang reads json number as float64
+}
+func TestParser_clef_default_level_with_integer_level(t *testing.T) {
+	json := `{"@t":"2016--21T11:22:33Z","CorrelationId":"12345","@l":4,"foo":"sumagh","bar":2}`
+	parser := PayloadParser{}
+	trc, err := parser.Parse(json)
+	assert.Nil(t, err)
+	assert.Equal(t, "info", trc.Level)
 }
 
 func Test_isDate(t *testing.T) {

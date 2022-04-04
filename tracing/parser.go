@@ -115,6 +115,8 @@ func (parser *PayloadParser) parseJson(payload string, jsonMap map[string]interf
 		Message:       message,
 		Level:         level,
 		CorrelationId: corrId,
+		Metrics:       make(map[string]float64),
+		Properties:    make(map[string]string),
 	}
 	populatePropertiesAndMetrics(jsonMap, &trc)
 	return trc, nil
@@ -191,11 +193,11 @@ func (parser *PayloadParser) parseClef(payload string, jsonMap map[string]interf
 		delete(jsonMap, "@l")
 	}
 
-	corrId := safeGetValue(jsonMap, "CorrelationId")
-	delete(jsonMap, "CorrelationId")
-	if corrId == "" {
-		corrId = safeGetValue(jsonMap, "corrId")
-		delete(jsonMap, "corrId")
+	var corrId string
+	corrIdFieldName, _ := findStringField(jsonMap, parser.config.CorrelationIdFieldNames) // we don't waste time on this to try other things
+	if corrIdFieldName != "" {
+		corrId = jsonMap[corrIdFieldName].(string)
+		delete(jsonMap, corrIdFieldName)
 	}
 
 	trc := Trace{
