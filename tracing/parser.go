@@ -3,7 +3,6 @@ package tracing
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -42,15 +41,74 @@ func (parser *PayloadParser) Parse(payload string) (Trace, error) {
 
 func (parser *PayloadParser) parseJson(payload string, jsonMap map[string]interface{}) (Trace, error) {
 	keys := maps.Keys(jsonMap)
-	fmt.Println(keys)
 	if slices.Contains(keys, "@t") && isDate(jsonMap["@t"].(string)) {
 		return parser.parseClef(payload, jsonMap)
 	}
 	return Trace{}, nil
 }
 
+/*
+@t	Timestamp	An ISO 8601 timestamp	Yes
+@m	Message	A fully-rendered message describing the event
+@mt	Message template	Alternative to Message; specifies a message template over the event’s properties that provides for rendering into a textual description of the event
+@l	Level	An implementation-specific level or severity identifier (string or number)	Absence implies “informational”
+@x	Exception	A language-dependent error representation potentially including backtrace
+@i	Event id	An implementation specific event id (string or number)
+@r	Renderings	If @mt includes tokens with programming-language-specific formatting, an array of pre-rendered values for each such token	May be omitted; if present, the count of renderings must match the count of formatted tokens exactly
+
+*/
 func (parser *PayloadParser) parseClef(payload string, jsonMap map[string]interface{}) (Trace, error) {
-	return Trace{}, nil
+	timestamp, err := parseDate(jsonMap["@t"])
+	delete(jsonMap, "@t")
+	if err != nil {
+		panic("invalid timestamp while it was supposed to work")
+	}
+
+	message := safeGetValue(jsonMap, "@m")
+	delete(jsonMap, "@m")
+	if message == "" {
+		message = safeGetValue(jsonMap, "@mt")
+		delete(jsonMap, "@mt")
+	}
+
+	corrId := safeGetValue(jsonMap, "CorrelationId")
+	delete(jsonMap, "CorrelationId")
+	if corrId == "" {
+		corrId = safeGetValue(jsonMap, "corrId")
+		delete(jsonMap, "corrId")
+	}
+
+	trc := Trace{
+		Timestamp:     timestamp,
+		Message:       message,
+		CorrelationId: corrId,
+		Level:         safeGetValue(jsonMap, "@l"), // not acceptting integer level
+		Metrics:       make(map[string]float64),
+		Properties:    make(map[string]string),
+	}
+
+	delete(jsonMap, "@l")
+
+	for key, value := range jsonMap {
+		s, success := value.(string)
+		if success {
+			trc.Properties[key] = s
+		} else {
+			f, success := value.(float64)
+			if success {
+				trc.Metrics[key] = f
+			}
+		}
+	}
+
+	return trc, nil
+}
+
+func safeGetValue(jsonMap map[string]interface{}, key string) string {
+	if value, ok := jsonMap[key]; ok {
+		return value.(string)
+	}
+	return ""
 }
 
 func isDate(s interface{}) bool {

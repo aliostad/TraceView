@@ -33,6 +33,21 @@ func TestParser_badjson(t *testing.T) {
 	assert.NotNil(t, err)
 }
 
+func TestParser_clef(t *testing.T) {
+	json := `{"@t":"2016-11-21T11:22:33Z","@m":"hello","@mt":"hello","CorrelationId":"12345","@l":"info","foo":"sumagh","bar":2}`
+	parser := PayloadParser{}
+	trc, err := parser.Parse(json)
+	assert.Nil(t, err)
+	assert.Equal(t, "hello", trc.Message)
+	assert.Equal(t, 11, trc.Timestamp.Hour())
+	assert.Equal(t, "info", trc.Level)
+	assert.Equal(t, "12345", trc.CorrelationId)
+	assert.Equal(t, 2, len(trc.Properties))
+	assert.Equal(t, 1, len(trc.Metrics))
+	assert.Equal(t, "sumagh", trc.Properties["foo"])
+	assert.Equal(t, 2.0, trc.Metrics["bar"]) // golang reads json number as float64
+}
+
 func Test_isDate(t *testing.T) {
 	assert.Nil(t, getSecondParam(parseDate("2016-01-01T00:00:00Z")))
 	assert.Nil(t, getSecondParam(parseDate("Fri, 01 Apr 2022 19:29:21 GMT")))
