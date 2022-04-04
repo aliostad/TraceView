@@ -44,7 +44,117 @@ func (parser *PayloadParser) parseJson(payload string, jsonMap map[string]interf
 	if slices.Contains(keys, "@t") && isDate(jsonMap["@t"].(string)) {
 		return parser.parseClef(payload, jsonMap)
 	}
-	return Trace{}, nil
+
+	var timestamp time.Time
+	var message string
+	var level string
+	var corrId string
+	var err error
+
+	// ______________________ TIMESTAMP ______________________
+	// if not defined, try to guess the timestamp field
+	if len(parser.config.TimestampFieldNames) == 0 {
+		var timestampFieldName string
+		timestampFieldName, timestamp = findTimestampField(jsonMap, "timestamp", "Timestamp", "time", "Time",
+			"date", "Date", "datetime", "DateTime", "eventDate", "EventDate")
+		if timestampFieldName == "" {
+			timestamp = time.Now().UTC()
+		} else {
+			delete(jsonMap, timestampFieldName)
+		}
+	} else {
+		// try to find the first timestamp field that has date value
+		for _, fieldName := range parser.config.TimestampFieldNames {
+			if value, ok := jsonMap[fieldName]; ok {
+				timestamp, err = parseDate(value)
+				if err == nil {
+					delete(jsonMap, fieldName)
+					break
+				} else {
+					continue
+				}
+			}
+		}
+
+		// if not found throw error
+		if timestamp.IsZero() {
+			return Trace{}, errors.New("no valid timestamp field found")
+		}
+	}
+
+	// ______________________ MESSAGE ______________________
+	messageFieldName, fromConfig := findStringField(jsonMap, parser.config.MessageFieldNames,
+		"message", "Message", "Description", "description",
+		"Text", "text", "Error", "error", "ErrorText", "errorText", "errorText")
+	if messageFieldName == "" {
+		if fromConfig {
+			return Trace{}, errors.New("defined message field names could not be found")
+		}
+	} else {
+		message = jsonMap[messageFieldName].(string)
+		delete(jsonMap, messageFieldName)
+	}
+
+	// ______________________ LEVEL ______________________
+	levelFieldName, _ := findStringField(jsonMap, parser.config.LevelFieldNames, "level", "Level", "severity", "Severity")
+	if levelFieldName == "" {
+		level = "info"
+	} else {
+		level = jsonMap[levelFieldName].(string)
+		delete(jsonMap, levelFieldName)
+	}
+
+	corrIdFieldName, _ := findStringField(jsonMap, parser.config.CorrelationIdFieldNames) // we don't waste time on this to try other things
+	if corrIdFieldName != "" {
+		corrId = jsonMap[corrIdFieldName].(string)
+		delete(jsonMap, corrIdFieldName)
+	}
+
+	trc := Trace{
+		Timestamp:     timestamp,
+		Message:       message,
+		Level:         level,
+		CorrelationId: corrId,
+	}
+	populatePropertiesAndMetrics(jsonMap, &trc)
+	return trc, nil
+}
+
+func findStringField(jsonMap map[string]interface{}, configFieldNames []string, fieldNames ...string) (string, bool) {
+	if len(configFieldNames) > 0 {
+		for _, fieldName := range configFieldNames {
+			if value, ok := jsonMap[fieldName]; ok {
+				if value.(string) != "" {
+					return fieldName, true
+				}
+			}
+		}
+	} else {
+		for _, fieldName := range fieldNames {
+			if value, ok := jsonMap[fieldName]; ok {
+				_, success := value.(string)
+				if success {
+					return fieldName, false
+				}
+			}
+		}
+		return "", false
+	}
+	return "", true
+}
+
+func findTimestampField(jsonMap map[string]interface{}, fieldNames ...string) (string, time.Time) {
+
+	for _, fieldName := range fieldNames {
+		if value, ok := jsonMap[fieldName]; ok {
+			dt, err := parseDate(value)
+			if err == nil {
+				return fieldName, dt
+			}
+		}
+	}
+
+	return "", time.Time{}
 }
 
 /*
@@ -65,10 +175,20 @@ func (parser *PayloadParser) parseClef(payload string, jsonMap map[string]interf
 	}
 
 	message := safeGetValue(jsonMap, "@m")
-	delete(jsonMap, "@m")
 	if message == "" {
 		message = safeGetValue(jsonMap, "@mt")
-		delete(jsonMap, "@mt")
+		if message != "" {
+			delete(jsonMap, "@mt")
+		}
+	} else {
+		delete(jsonMap, "@m")
+	}
+
+	level := safeGetValue(jsonMap, "@l")
+	if level == "" {
+		level = "info"
+	} else {
+		delete(jsonMap, "@l")
 	}
 
 	corrId := safeGetValue(jsonMap, "CorrelationId")
@@ -82,13 +202,17 @@ func (parser *PayloadParser) parseClef(payload string, jsonMap map[string]interf
 		Timestamp:     timestamp,
 		Message:       message,
 		CorrelationId: corrId,
-		Level:         safeGetValue(jsonMap, "@l"), // not acceptting integer level
+		Level:         level,
 		Metrics:       make(map[string]float64),
 		Properties:    make(map[string]string),
 	}
 
-	delete(jsonMap, "@l")
+	populatePropertiesAndMetrics(jsonMap, &trc)
 
+	return trc, nil
+}
+
+func populatePropertiesAndMetrics(jsonMap map[string]interface{}, trc *Trace) {
 	for key, value := range jsonMap {
 		s, success := value.(string)
 		if success {
@@ -100,13 +224,14 @@ func (parser *PayloadParser) parseClef(payload string, jsonMap map[string]interf
 			}
 		}
 	}
-
-	return trc, nil
 }
 
 func safeGetValue(jsonMap map[string]interface{}, key string) string {
 	if value, ok := jsonMap[key]; ok {
-		return value.(string)
+		s, success := value.(string)
+		if success {
+			return s
+		}
 	}
 	return ""
 }

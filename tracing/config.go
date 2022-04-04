@@ -1,6 +1,9 @@
 package tracing
 
 type Config struct {
-	TimestampNames  []string
-	IndexableFields []string
+	TimestampFieldNames     []string
+	MessageFieldNames       []string
+	LevelFieldNames         []string
+	CorrelationIdFieldNames []string
+	IndexableFieldNames     []string
 }
