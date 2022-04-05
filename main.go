@@ -52,6 +52,7 @@ func listenUdp(port int, host string, dispatch chan<- string) {
 		data := strings.TrimSpace(string(message[:len]))
 		dispatch <- data
 	}
+
 }
 
 // for now we just panic

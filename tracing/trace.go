@@ -1,6 +1,7 @@
 package tracing
 
 import (
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -14,10 +15,11 @@ type Trace struct {
 	Level         string
 	Metrics       map[string]float64
 	Properties    map[string]string
+	TimeIndex     string
 }
 
-func NewTrace(ts time.Time, message string, corrId string, level string) Trace {
-	return Trace{
+func NewTrace(ts time.Time, message string, corrId string, level string) *Trace {
+	return &Trace{
 		TraceId:       uuid.New().String(),
 		Timestamp:     ts.UTC(),
 		Message:       message,
@@ -25,6 +27,7 @@ func NewTrace(ts time.Time, message string, corrId string, level string) Trace {
 		Level:         level,
 		Metrics:       make(map[string]float64),
 		Properties:    make(map[string]string),
+		TimeIndex:     strconv.FormatInt(ts.UnixMicro(), 10),
 	}
 
 }

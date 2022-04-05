@@ -27,9 +27,9 @@ func NewPayloadParserWithConfig(config *Config) *PayloadParser {
 	}
 }
 
-func (parser *PayloadParser) Parse(payload string) (Trace, error) {
+func (parser *PayloadParser) Parse(payload string) (*Trace, error) {
 	if payload == "" {
-		return Trace{}, errors.New("empty payload")
+		return &Trace{}, errors.New("empty payload")
 	}
 
 	payload = strings.TrimSpace(payload)
@@ -37,7 +37,7 @@ func (parser *PayloadParser) Parse(payload string) (Trace, error) {
 		var result map[string]interface{}
 		err := json.Unmarshal([]byte(payload), &result)
 		if err != nil {
-			return Trace{}, err
+			return &Trace{}, err
 		}
 
 		return parser.parseJson(payload, result)
@@ -47,7 +47,7 @@ func (parser *PayloadParser) Parse(payload string) (Trace, error) {
 
 }
 
-func (parser *PayloadParser) parseJson(payload string, jsonMap map[string]interface{}) (Trace, error) {
+func (parser *PayloadParser) parseJson(payload string, jsonMap map[string]interface{}) (*Trace, error) {
 	keys := maps.Keys(jsonMap)
 	if slices.Contains(keys, "@t") && isDate(jsonMap["@t"].(string)) {
 		return parser.parseClef(payload, jsonMap)
@@ -86,7 +86,7 @@ func (parser *PayloadParser) parseJson(payload string, jsonMap map[string]interf
 
 		// if not found throw error
 		if timestamp.IsZero() {
-			return Trace{}, errors.New("no valid timestamp field found")
+			return &Trace{}, errors.New("no valid timestamp field found")
 		}
 	}
 
@@ -96,7 +96,7 @@ func (parser *PayloadParser) parseJson(payload string, jsonMap map[string]interf
 		"Text", "text", "Error", "error", "ErrorText", "errorText", "errorText")
 	if messageFieldName == "" {
 		if fromConfig {
-			return Trace{}, errors.New("defined message field names could not be found")
+			return &Trace{}, errors.New("defined message field names could not be found")
 		}
 	} else {
 		message = jsonMap[messageFieldName].(string)
@@ -119,7 +119,7 @@ func (parser *PayloadParser) parseJson(payload string, jsonMap map[string]interf
 	}
 
 	trc := NewTrace(timestamp, message, corrId, level)
-	populatePropertiesAndMetrics(jsonMap, &trc)
+	populatePropertiesAndMetrics(jsonMap, trc)
 	return trc, nil
 }
 
@@ -170,7 +170,7 @@ func findTimestampField(jsonMap map[string]interface{}, fieldNames ...string) (s
 @r	Renderings	If @mt includes tokens with programming-language-specific formatting, an array of pre-rendered values for each such token	May be omitted; if present, the count of renderings must match the count of formatted tokens exactly
 
 */
-func (parser *PayloadParser) parseClef(payload string, jsonMap map[string]interface{}) (Trace, error) {
+func (parser *PayloadParser) parseClef(payload string, jsonMap map[string]interface{}) (*Trace, error) {
 	timestamp, err := parseDate(jsonMap["@t"])
 	delete(jsonMap, "@t")
 	if err != nil {
@@ -203,7 +203,7 @@ func (parser *PayloadParser) parseClef(payload string, jsonMap map[string]interf
 
 	trc := NewTrace(timestamp, message, corrId, level)
 
-	populatePropertiesAndMetrics(jsonMap, &trc)
+	populatePropertiesAndMetrics(jsonMap, trc)
 
 	return trc, nil
 }

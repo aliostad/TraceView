@@ -6,6 +6,7 @@ type Config struct {
 	LevelFieldNames         []string
 	CorrelationIdFieldNames []string
 	IndexableFieldNames     []string
+	KeepOriginalPayload     bool
 }
 
 func EmptyConfig() *Config {
