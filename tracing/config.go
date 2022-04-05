@@ -7,3 +7,7 @@ type Config struct {
 	CorrelationIdFieldNames []string
 	IndexableFieldNames     []string
 }
+
+func EmptyConfig() *Config {
+	return &Config{}
+}

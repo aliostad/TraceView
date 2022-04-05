@@ -12,7 +12,19 @@ import (
 )
 
 type PayloadParser struct {
-	config Config
+	config *Config
+}
+
+func NewPayloadParser() *PayloadParser {
+	return &PayloadParser{
+		config: EmptyConfig(),
+	}
+}
+
+func NewPayloadParserWithConfig(config *Config) *PayloadParser {
+	return &PayloadParser{
+		config: config,
+	}
 }
 
 func (parser *PayloadParser) Parse(payload string) (Trace, error) {

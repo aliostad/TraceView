@@ -9,12 +9,13 @@ import (
 
 func Test_canLoadJson(t *testing.T) {
 	jsonString := `{"Timestamp":"2016-01-01T00:00:00Z","Message":"hello","CorrelationId":"12345","Metrics":{"foo":1,"bar":2},"Level":"info"}`
-	parser := PayloadParser{}
+	parser := NewPayloadParser()
 	parser.Parse(jsonString)
+
 }
 
 func TestParser_string(t *testing.T) {
-	parser := PayloadParser{}
+	parser := NewPayloadParser()
 	trace, err := parser.Parse("hello")
 	if err != nil {
 		panic(err)
@@ -27,7 +28,7 @@ func TestParser_string(t *testing.T) {
 }
 
 func TestParser_badjson(t *testing.T) {
-	parser := PayloadParser{}
+	parser := NewPayloadParser()
 	_, err := parser.Parse("{hello")
 
 	assert.NotNil(t, err)
@@ -35,7 +36,7 @@ func TestParser_badjson(t *testing.T) {
 
 func TestParser_clef_full(t *testing.T) {
 	json := `{"@t":"2016-11-21T11:22:33Z","@m":"hello","@mt":"hellomtt","CorrelationId":"12345","@l":"debug","foo":"sumagh","bar":2}`
-	parser := PayloadParser{}
+	parser := NewPayloadParser()
 	trc, err := parser.Parse(json)
 	assert.Nil(t, err)
 	assert.Equal(t, "hello", trc.Message)
@@ -50,14 +51,14 @@ func TestParser_clef_full(t *testing.T) {
 
 func TestParser_clef_doesnt_fail_no_message(t *testing.T) {
 	json := `{"@t":"2016-11-21T11:22:33Z","CorrelationId":"12345","@l":"infos","foo":"sumagh","bar":2}`
-	parser := PayloadParser{}
+	parser := NewPayloadParser()
 	_, err := parser.Parse(json)
 	assert.Nil(t, err)
 }
 
 func TestParser_clef_mt(t *testing.T) {
 	json := `{"@t":"2016-11-21T11:22:33Z", "@mt": "Here is {sumagh}", "CorrelationId":"12345","@l":"infos","foo":"sumagh","bar":2}`
-	parser := PayloadParser{}
+	parser := NewPayloadParser()
 	trc, err := parser.Parse(json)
 	assert.Nil(t, err)
 	assert.Equal(t, "Here is {sumagh}", trc.Message)
@@ -65,11 +66,11 @@ func TestParser_clef_mt(t *testing.T) {
 
 func TestParser_clef_corrid_config(t *testing.T) {
 	json := `{"@t":"2016-11-21T11:22:33Z", "@mt": "Here is {sumagh}", "CorrelationId":"12345","@l":"infos","foo":"sumagh","bar":2}`
-	parser := PayloadParser{
-		config: Config{
+	parser := NewPayloadParserWithConfig(
+		&Config{
 			CorrelationIdFieldNames: []string{"CorrelationId"},
-		},
-	}
+		})
+
 	trc, err := parser.Parse(json)
 	assert.Nil(t, err)
 	assert.Equal(t, "12345", trc.CorrelationId)
@@ -77,7 +78,7 @@ func TestParser_clef_corrid_config(t *testing.T) {
 
 func TestParser_nonclef_no_config(t *testing.T) {
 	json := `{"Timestamp":"2016-11-21T11:22:33Z","message": "I was here!","CorrelationId":"12345","severity":"infos","foo":"sumagh","bar":2}`
-	parser := PayloadParser{}
+	parser := NewPayloadParser()
 	trc, err := parser.Parse(json)
 	assert.Nil(t, err)
 	assert.Equal(t, 11, trc.Timestamp.Hour())
@@ -92,14 +93,13 @@ func TestParser_nonclef_no_config(t *testing.T) {
 
 func TestParser_nonclef_full_config(t *testing.T) {
 	json := `{"Timestampi":"2016-11-21T11:22:33Z", "tamale":"toto", "mensaje": "I was here!","corrrId":"12345","suvirity":"infos","foo":"sumagh","bar":2}`
-	parser := PayloadParser{
-		config: Config{
+	parser := NewPayloadParserWithConfig(
+		&Config{
 			TimestampFieldNames:     []string{"tamale", "Timestampi"},
 			MessageFieldNames:       []string{"moosa", "mensaje"},
 			LevelFieldNames:         []string{"suvirity"},
 			CorrelationIdFieldNames: []string{"corrrId"},
-		},
-	}
+		})
 	trc, err := parser.Parse(json)
 	assert.Nil(t, err)
 	assert.Equal(t, 11, trc.Timestamp.Hour())
@@ -114,14 +114,13 @@ func TestParser_nonclef_full_config(t *testing.T) {
 
 func TestParser_nonclef_full_config_message_not_found(t *testing.T) {
 	json := `{"Timestampi":"2016-11-21T11:22:33Z","message": "I was here!","corrrId":"12345","suvirity":"infos","foo":"sumagh","bar":2}`
-	parser := PayloadParser{
-		config: Config{
+	parser := NewPayloadParserWithConfig(
+		&Config{
 			TimestampFieldNames:     []string{"Timestampi"},
 			MessageFieldNames:       []string{"mensaje"},
 			LevelFieldNames:         []string{"suvirity"},
 			CorrelationIdFieldNames: []string{"corrrId"},
-		},
-	}
+		})
 
 	_, err := parser.Parse(json)
 	assert.NotNil(t, err)
@@ -130,14 +129,13 @@ func TestParser_nonclef_full_config_message_not_found(t *testing.T) {
 
 func TestParser_nonclef_full_config_level_not_found(t *testing.T) {
 	json := `{"Timestampi":"2016-11-21T11:22:33Z","message": "I was here!","corrrId":"12345","severity":"infos","foo":"sumagh","bar":2}`
-	parser := PayloadParser{
-		config: Config{
+	parser := NewPayloadParserWithConfig(
+		&Config{
 			TimestampFieldNames:     []string{"Timestampi"},
 			MessageFieldNames:       []string{},
 			LevelFieldNames:         []string{"suvirity"},
 			CorrelationIdFieldNames: []string{"corrrId"},
-		},
-	}
+		})
 
 	trc, err := parser.Parse(json)
 	assert.Nil(t, err)
@@ -152,7 +150,7 @@ func TestParser_nonclef_full_config_level_not_found(t *testing.T) {
 }
 func TestParser_clef_default_level_with_integer_level(t *testing.T) {
 	json := `{"@t":"2016--21T11:22:33Z","CorrelationId":"12345","@l":4,"foo":"sumagh","bar":2}`
-	parser := PayloadParser{}
+	parser := NewPayloadParser()
 	trc, err := parser.Parse(json)
 	assert.Nil(t, err)
 	assert.Equal(t, "info", trc.Level)
