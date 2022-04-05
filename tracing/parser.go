@@ -31,11 +31,7 @@ func (parser *PayloadParser) Parse(payload string) (Trace, error) {
 		return parser.parseJson(payload, result)
 	}
 
-	return Trace{
-		Message:   payload,
-		Timestamp: time.Now().UTC(),
-		Level:     "info",
-	}, nil
+	return NewTrace(time.Now().UTC(), payload, "", "info"), nil
 
 }
 
@@ -110,14 +106,7 @@ func (parser *PayloadParser) parseJson(payload string, jsonMap map[string]interf
 		delete(jsonMap, corrIdFieldName)
 	}
 
-	trc := Trace{
-		Timestamp:     timestamp,
-		Message:       message,
-		Level:         level,
-		CorrelationId: corrId,
-		Metrics:       make(map[string]float64),
-		Properties:    make(map[string]string),
-	}
+	trc := NewTrace(timestamp, message, corrId, level)
 	populatePropertiesAndMetrics(jsonMap, &trc)
 	return trc, nil
 }
@@ -200,14 +189,7 @@ func (parser *PayloadParser) parseClef(payload string, jsonMap map[string]interf
 		delete(jsonMap, corrIdFieldName)
 	}
 
-	trc := Trace{
-		Timestamp:     timestamp,
-		Message:       message,
-		CorrelationId: corrId,
-		Level:         level,
-		Metrics:       make(map[string]float64),
-		Properties:    make(map[string]string),
-	}
+	trc := NewTrace(timestamp, message, corrId, level)
 
 	populatePropertiesAndMetrics(jsonMap, &trc)
 

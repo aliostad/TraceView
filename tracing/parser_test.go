@@ -55,6 +55,26 @@ func TestParser_clef_doesnt_fail_no_message(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestParser_clef_mt(t *testing.T) {
+	json := `{"@t":"2016-11-21T11:22:33Z", "@mt": "Here is {sumagh}", "CorrelationId":"12345","@l":"infos","foo":"sumagh","bar":2}`
+	parser := PayloadParser{}
+	trc, err := parser.Parse(json)
+	assert.Nil(t, err)
+	assert.Equal(t, "Here is {sumagh}", trc.Message)
+}
+
+func TestParser_clef_corrid_config(t *testing.T) {
+	json := `{"@t":"2016-11-21T11:22:33Z", "@mt": "Here is {sumagh}", "CorrelationId":"12345","@l":"infos","foo":"sumagh","bar":2}`
+	parser := PayloadParser{
+		config: Config{
+			CorrelationIdFieldNames: []string{"CorrelationId"},
+		},
+	}
+	trc, err := parser.Parse(json)
+	assert.Nil(t, err)
+	assert.Equal(t, "12345", trc.CorrelationId)
+}
+
 func TestParser_nonclef_no_config(t *testing.T) {
 	json := `{"Timestamp":"2016-11-21T11:22:33Z","message": "I was here!","CorrelationId":"12345","severity":"infos","foo":"sumagh","bar":2}`
 	parser := PayloadParser{}
@@ -71,11 +91,11 @@ func TestParser_nonclef_no_config(t *testing.T) {
 }
 
 func TestParser_nonclef_full_config(t *testing.T) {
-	json := `{"Timestampi":"2016-11-21T11:22:33Z","mensaje": "I was here!","corrrId":"12345","suvirity":"infos","foo":"sumagh","bar":2}`
+	json := `{"Timestampi":"2016-11-21T11:22:33Z", "tamale":"toto", "mensaje": "I was here!","corrrId":"12345","suvirity":"infos","foo":"sumagh","bar":2}`
 	parser := PayloadParser{
 		config: Config{
-			TimestampFieldNames:     []string{"Timestampi"},
-			MessageFieldNames:       []string{"mensaje"},
+			TimestampFieldNames:     []string{"tamale", "Timestampi"},
+			MessageFieldNames:       []string{"moosa", "mensaje"},
 			LevelFieldNames:         []string{"suvirity"},
 			CorrelationIdFieldNames: []string{"corrrId"},
 		},
@@ -86,7 +106,7 @@ func TestParser_nonclef_full_config(t *testing.T) {
 	assert.Equal(t, "infos", trc.Level)
 	assert.Equal(t, "12345", trc.CorrelationId)
 	assert.Equal(t, "I was here!", trc.Message)
-	assert.Equal(t, 1, len(trc.Properties))
+	assert.Equal(t, 2, len(trc.Properties))
 	assert.Equal(t, 1, len(trc.Metrics))
 	assert.Equal(t, "sumagh", trc.Properties["foo"])
 	assert.Equal(t, 2.0, trc.Metrics["bar"]) // golang reads json number as float64
