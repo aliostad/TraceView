@@ -30,6 +30,16 @@ func (store *InMemoryStore) Store(trace *Trace, originalPayload string) error {
 	return nil
 }
 
+func (store *InMemoryStore) GetById(id string) (*Trace, error) {
+	txn := store.db.Txn(false)
+	trace, err := txn.First("Trace", "id", id)
+	if err != nil {
+		return nil, err
+	}
+
+	return trace.(*Trace), nil
+}
+
 func getSchema() *memdb.DBSchema {
 
 	return &memdb.DBSchema{
