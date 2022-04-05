@@ -6,7 +6,7 @@ import (
 
 type InMemoryStore struct {
 	config   *Config
-	payloads map[string]Trace
+	payloads map[string]string
 	db       *memdb.MemDB
 }
 
@@ -18,12 +18,15 @@ func NewInMemoryStore(config *Config) (*InMemoryStore, error) {
 
 	return &InMemoryStore{
 		config:   config,
-		payloads: make(map[string]Trace),
+		payloads: make(map[string]string),
 		db:       db,
 	}, nil
 }
 
 func (store *InMemoryStore) Store(trace *Trace, originalPayload string) error {
+	if store.config.KeepOriginalPayload {
+		store.payloads[trace.TraceId] = originalPayload
+	}
 	txn := store.db.Txn(true)
 	txn.Insert("Trace", trace)
 	txn.Commit()

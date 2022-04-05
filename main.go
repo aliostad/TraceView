@@ -23,13 +23,18 @@ func main() {
 	dispatch := make(chan string, 200)
 
 	go listenUdp(*udpPortPtr, *hostPtr, dispatch)
-
-	for dispatchData := range dispatch {
-		fmt.Println(dispatchData)
-	}
+	go readFrom(dispatch)
 
 	var tt tracing.Trace = tracing.Trace{}
 	fmt.Println(tt)
+	_, _ = fmt.Scanln() // stop
+	close(dispatch)
+}
+
+func readFrom(dispatch <-chan string) {
+	for dispatchData := range dispatch {
+		fmt.Println(dispatchData)
+	}
 }
 
 func listenUdp(port int, host string, dispatch chan<- string) {
