@@ -31,7 +31,11 @@ func NewTraceApi(port int,
 }
 
 func (api *TraceApi) Start() error {
-	http.HandleFunc("/", homePage)
+	fs := http.FileServer(http.Dir("./content"))
+
+	http.HandleFunc("/$", homePage)
+	http.Handle("/", fs)
+
 	go func() {
 		if err := api.server.ListenAndServe(); err != nil {
 			log.Fatal(err)
@@ -42,8 +46,7 @@ func (api *TraceApi) Start() error {
 }
 
 func homePage(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Welcome to the HomePage!")
-	fmt.Println("Endpoint Hit: homePage")
+	http.Redirect(w, r, "/index.html", http.StatusFound)
 }
 
 func (api *TraceApi) Stop(ctx context.Context) error {
