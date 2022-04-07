@@ -17,7 +17,7 @@ func main() {
 	hostPtr := flag.String("host", "0.0.0.0", "host")
 	timestampFieldNamesPtr := flag.String("tfn", "", "timestamp field names, comma separated")
 	messageFieldNamesPtr := flag.String("mfn", "", "message field names, comma separated")
-	levelFieldNamesPtr := flag.String("lfn", "", "levle field names, comma separated")
+	levelFieldNamesPtr := flag.String("lfn", "", "level field names, comma separated")
 	corridFieldNamesPtr := flag.String("cfn", "", "correlation Id field names, comma separated")
 	indexableFieldNamesPtr := flag.String("ifn", "", "indexable field names, comma separated")
 	keepOriginalPayloadPtr := flag.Bool("keep-original-payload", false, "keep original payload")
