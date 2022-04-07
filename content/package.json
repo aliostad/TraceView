@@ -1,0 +1,14 @@
+{
+  "name": "traceview",
+  "version": "1.0.0",
+  "description": "A developer-friendly tracing tool",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "bootstrap": "^5.1.3"
+  }
+}
