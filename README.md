@@ -24,7 +24,7 @@ The idea is that once you collect a trace, you might want to review it later. Wi
 
 Think of a scenario when you are debugging an issue but typically due to concurrency, it is impossible to walk through the code as threads work left, right and centre and interfere with proper debugging. Or a server that is receiving various requests but you need to trace a particular request. Or when the issue only occurs when you run the code and not while debugging (observing interferes with the behaviour) If you have never had these scenarios then you are lucky but for most non-trivial systems, these cases occur.
 
-### How do I get started?
+### How do I get started [Future, not yet]?
 
 1. Use language/framework-dependant libraries ([supported frameworks](...)) to send output of your existing/added tracing code to TraceView
 2. Download the docker image
