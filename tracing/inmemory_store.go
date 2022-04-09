@@ -62,6 +62,11 @@ func (store *InMemoryStore) GetById(id string) (*Trace, error) {
 }
 
 func (store *InMemoryStore) ListByTimeRange(n int, from, to *time.Time) ([]*Trace, error) {
+	reverse := false
+	if from == nil && to != nil {
+		reverse = true
+	}
+
 	if from == nil {
 		fromX := time.Unix(0, 0)
 		from = &fromX
@@ -74,7 +79,14 @@ func (store *InMemoryStore) ListByTimeRange(n int, from, to *time.Time) ([]*Trac
 
 	txn := store.db.Txn(false)
 	defer txn.Abort()
-	iter, err := txn.LowerBound(tableName, timestamp_index, strconv.FormatInt((*from).UnixMicro(), 10))
+	var iter memdb.ResultIterator
+	var err error
+	if reverse {
+		iter, err = txn.ReverseLowerBound(tableName, timestamp_index, strconv.FormatInt((*to).UnixMicro(), 10))
+	} else {
+		iter, err = txn.LowerBound(tableName, timestamp_index, strconv.FormatInt((*from).UnixMicro(), 10))
+	}
+
 	if err != nil {
 		return nil, err
 	}

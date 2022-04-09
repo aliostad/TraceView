@@ -56,6 +56,33 @@ func Test_time_range(t *testing.T) {
 
 }
 
+func Test_time_range_reverse(t *testing.T) {
+	store, err := NewInMemoryStore(EmptyConfig())
+	assert.Nil(t, err)
+	from := time.Now().UTC().Add(-10 * 24 * time.Hour)
+	to := time.Now().UTC().Add(-1 * 24 * time.Hour)
+	for _, trc := range getRandomTraces(100, &from, &to) {
+		err = store.Store(trc, "")
+		assert.Nil(t, err)
+	}
+
+	fromBefore := from.Add(-1 * time.Hour)
+	toAfter := to.Add(1 * time.Hour)
+	trcBefore := getTrace(&fromBefore)
+	trcAfter := getTrace(&toAfter)
+
+	afterAfter := toAfter.Add(1 * time.Hour)
+
+	_ = store.Store(trcBefore, "")
+	_ = store.Store(trcAfter, "")
+
+	tracesBack, err := store.ListByTimeRange(42, nil, &afterAfter)
+	assert.Nil(t, err)
+	assert.Equal(t, 42, len(tracesBack))
+	assert.Equal(t, trcAfter.TraceId, tracesBack[0].TraceId)
+
+}
+
 func getRandomTime(from, to *time.Time) time.Time {
 	var u1, u2 int64
 	if from == nil {
