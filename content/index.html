@@ -39,8 +39,8 @@
       rel="stylesheet"
     />
   </head>
-
   <body class="g-sidenav-show bg-gray-200">
+    <!--
     <aside
       class="sidenav navbar navbar-vertical navbar-expand-xs border-0 border-radius-xl my-3 fixed-start ms-3 bg-gradient-dark"
       id="sidenav-main"
@@ -137,6 +137,7 @@
         </ul>
       </div>
     </aside>
+    -->
     <nav
       class="navbar navbar-main navbar-expand-lg px-0 mx-4 shadow-none border-radius-xl"
       id="navbarBlur"
@@ -180,10 +181,85 @@
                 <span class="d-sm-inline d-none">Pause</span>
               </a>
             </li>
-            
           </ul>
         </div>
       </div>
     </nav>
+    <div class="p-3">
+      <table class="table table-striped">
+        <thead>
+          <tr class>
+            <th scope="col" class="col-1">Time</th>
+            <th scope="col" class="col-2">Level</th>
+            <th scope="col" class="col-2">Id</th>
+            <th scope="col">Message</th>
+          </tr>
+        </thead>
+        <tbody id="tabla"></tbody>
+      </table>
+    </div>
+    <script
+      src="https://code.jquery.com/jquery-3.6.0.min.js"
+      integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4="
+      crossorigin="anonymous"
+    ></script>
+
+    <script type="text/javascript">
+      const baseUrl = "http://localhost:8969/api/traces?";
+      const timeout = 1000;
+
+      $(document).ready(function () {
+        var lastTime = null,
+          html = null,
+          stop = false,
+          loadDataCounter = 0,
+          ids = {};
+
+        function loadData() {
+          loadDataCounter++;
+          if (stop) {
+            return;
+          }
+
+          $.ajax({
+            url: lastTime ? baseUrl + "from=" + lastTime : baseUrl,
+            type: "GET",
+            dataType: "json",
+            error: function (jqXHR, textStatus, errorThrown) {
+              console.log(jqXHR);
+              console.log(textStatus);
+              console.log(errorThrown);
+            },
+            success: function (data) {
+              if (!data) return;
+              if (data.length == 0) {
+                setTimeout(loadData, timeout);
+                console.log("No data - checking in " + timeout + "ms");
+              } else {
+                lastTime = data[data.length - 1].Timestamp;
+                data.forEach(function (item) {
+                  if (ids[item.TraceId]) {
+                    console.log("Duplicate id: " + item.TraceId);
+                  }
+
+                  ids[item.TraceId] = item;
+                  html += `<tr>
+                  <th scope="row">${item.Timestamp}</th>
+                  <td>${item.Level}</td>
+                  <td>${item.TraceId}</td>
+                  <td>${item.Message}</td>
+                </tr>`;
+                });
+                $("#tabla").html(html);
+                $("html, body").scrollTop($(document).height());
+                setTimeout(loadData, 10);
+              }
+            },
+          });
+        }
+
+        loadData();
+      });
+    </script>
   </body>
 </html>

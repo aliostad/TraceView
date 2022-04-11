@@ -50,10 +50,34 @@ func Test_time_range(t *testing.T) {
 	_ = store.Store(trcBefore, "")
 	_ = store.Store(trcAfter, "")
 
-	tracesBack, err := store.ListByTimeRange(42, &from, &to)
+	tracesBack, err := store.ListByTimeRange(42, &from, &to, false)
 	assert.Nil(t, err)
 	assert.Equal(t, 42, len(tracesBack))
 
+}
+
+func Test_time_range_exclusive(t *testing.T) {
+	store, err := NewInMemoryStore(EmptyConfig())
+	assert.Nil(t, err)
+	from := time.Now().UTC().Add(-10 * 24 * time.Hour)
+	to := time.Now().UTC().Add(-1 * 24 * time.Hour)
+	for _, trc := range getRandomTraces(100, &from, &to) {
+		err = store.Store(trc, "")
+		assert.Nil(t, err)
+	}
+
+	fromBefore := from.Add(-1 * time.Hour)
+	toAfter := to.Add(1 * time.Hour)
+	trcBefore := getTrace(&fromBefore)
+	trcAfter := getTrace(&toAfter)
+
+	_ = store.Store(trcBefore, "")
+	_ = store.Store(trcAfter, "")
+
+	tracesBack, err := store.ListByTimeRange(42, &fromBefore, &to, true)
+	assert.Nil(t, err)
+	assert.Equal(t, 42, len(tracesBack))
+	assert.NotEqual(t, trcBefore.TraceId, tracesBack[0].TraceId)
 }
 
 func Test_time_range_reverse(t *testing.T) {
@@ -76,10 +100,10 @@ func Test_time_range_reverse(t *testing.T) {
 	_ = store.Store(trcBefore, "")
 	_ = store.Store(trcAfter, "")
 
-	tracesBack, err := store.ListByTimeRange(42, nil, &afterAfter)
+	tracesBack, err := store.ListByTimeRange(42, nil, &afterAfter, false)
 	assert.Nil(t, err)
 	assert.Equal(t, 42, len(tracesBack))
-	assert.Equal(t, trcAfter.TraceId, tracesBack[0].TraceId)
+	assert.Equal(t, trcAfter.TraceId, tracesBack[41].TraceId)
 
 }
 

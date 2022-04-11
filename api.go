@@ -95,7 +95,7 @@ func traces(w http.ResponseWriter, r *http.Request) {
 		n, _ = strconv.Atoi(counts)
 	}
 
-	traces, err := singletonApi.store.ListByTimeRange(n, from, to)
+	traces, err := singletonApi.store.ListByTimeRange(n, from, to, true)
 	if err != nil {
 		log.Println(err)
 		w.WriteHeader(http.StatusInternalServerError)

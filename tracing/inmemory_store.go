@@ -61,7 +61,7 @@ func (store *InMemoryStore) GetById(id string) (*Trace, error) {
 	return trace.(*Trace), nil
 }
 
-func (store *InMemoryStore) ListByTimeRange(n int, from, to *time.Time) ([]*Trace, error) {
+func (store *InMemoryStore) ListByTimeRange(n int, from, to *time.Time, exclusive bool) ([]*Trace, error) {
 	reverse := false
 	if from == nil && to != nil {
 		reverse = true
@@ -93,18 +93,37 @@ func (store *InMemoryStore) ListByTimeRange(n int, from, to *time.Time) ([]*Trac
 
 	traces := make([]*Trace, 0)
 
-	i := 0
 	for obj := iter.Next(); obj != nil; obj = iter.Next() {
 		trc := obj.(*Trace)
-		i++
-		if i > max_return || i > n || trc.Timestamp.After(*to) {
+
+		if trc.Timestamp.After(*to) {
 			break
 		}
 
+		if exclusive && (trc.Timestamp.Equal(*to) || trc.Timestamp.Equal(*from)) {
+			continue
+		}
+
 		traces = append(traces, trc)
+		if len(traces) >= min(max_return, n) {
+			break
+		}
+	}
+
+	if reverse {
+		for i, j := 0, len(traces)-1; i < j; i, j = i+1, j-1 {
+			traces[i], traces[j] = traces[j], traces[i]
+		}
 	}
 
 	return traces, nil
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }
 
 func getSchema() *memdb.DBSchema {
