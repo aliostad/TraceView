@@ -21,3 +21,6 @@ TraceView
 
 node_modules/
 bin/
+
+build-docker.sh
+run-docker.sh
